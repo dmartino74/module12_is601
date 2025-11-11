@@ -1,19 +1,28 @@
+version: '3.8'
+
 services:
-  # Service: web
+  # Service: web (FastAPI app)
   web:
     build: .
     container_name: fastapi_calculator
     ports:
-      - "8000:8000"
+      - "8080:8000"  # Host port 8080 → Container port 8000
     volumes:
       - .:/app
+    working_dir: /app
     environment:
       PYTHONDONTWRITEBYTECODE: 1
       PYTHONUNBUFFERED: 1
       DATABASE_URL: postgresql://postgres:postgres@db:5432/fastapi_db
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import requests; print(requests.get('http://localhost:8000/health').status_code)"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     networks:
       - app-network
 

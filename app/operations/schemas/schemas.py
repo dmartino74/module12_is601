@@ -1,4 +1,4 @@
-from pydantic import BaseModel, validator, root_validator
+from pydantic import BaseModel, model_validator
 from typing import Literal, Optional
 from datetime import datetime
 
@@ -10,13 +10,9 @@ class CalculationCreate(BaseModel):
     b: float
     type: OperationType
 
-    @root_validator
+    @model_validator(mode="after")
     def validate_inputs(cls, values):
-        a = values.get("a")
-        b = values.get("b")
-        op_type = values.get("type")
-
-        if op_type == "Divide" and b == 0:
+        if values.type == "Divide" and values.b == 0:
             raise ValueError("Cannot divide by zero")
         return values
 

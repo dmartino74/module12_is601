@@ -1,6 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
-from main import app
+from app.main import app  # ✅ Fixed import path
 
 client = TestClient(app)
 
@@ -25,4 +25,3 @@ def test_calculate_divide_by_zero():
     response = client.post("/calculate", json={"a": 10, "b": 0, "type": "Divide"})
     assert response.status_code == 400
     assert "Cannot divide by zero" in response.json()["error"]
-
