@@ -6,10 +6,12 @@ from fastapi.exceptions import RequestValidationError
 
 # ✅ Import Base and engine from db
 from app.db import Base, engine
+
 # ✅ Import models so they are registered with Base.metadata
 from app.models import calculation, user
+
 # ✅ Import routers
-from app.routes import users, calculations
+from app.routes import users, calculations, calculate
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -52,6 +54,6 @@ async def health():
     return {"status": "ok"}
 
 # ✅ Include routers
-# IMPORTANT: calculations router already has prefix="/calculate" inside its file
 app.include_router(users.router, prefix="/users", tags=["users"])
 app.include_router(calculations.router, tags=["calculations"])
+app.include_router(calculate.router, prefix="/calculate", tags=["calculate"])
