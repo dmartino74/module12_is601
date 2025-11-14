@@ -6,24 +6,35 @@ import os
 import signal
 import socket
 
+from app.db import engine
+from app.models import Base
+
+
 def _is_port_open(host: str, port: int, timeout: float = 0.5) -> bool:
+    """Check if a TCP port is open on the given host."""
     try:
         with socket.create_connection((host, port), timeout=timeout):
             return True
     except OSError:
         return False
 
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_database():
+    """
+    Ensure all tables exist before tests run.
+    This clears the 'UndefinedTable' errors for calculations and users.
+    """
+    Base.metadata.create_all(bind=engine)
+    yield
+    # Optional: drop tables after tests
+    Base.metadata.drop_all(bind=engine)
+
+
 @pytest.fixture(scope="session")
 def fastapi_server():
     """
     Start or wait for a FastAPI server for E2E tests and stop it after the session.
-
-    Behavior:
-    - If a server is already listening on host:port, the fixture waits for an HTTP response
-      and yields without starting or stopping any process.
-    - Otherwise the fixture starts uvicorn (preferred) or falls back to `python -m app.main`,
-      waits for readiness, yields to tests, and then attempts a graceful shutdown of the
-      process it started.
     """
     env = os.environ.copy()
     env["PYTHONPATH"] = os.getcwd()
@@ -49,7 +60,7 @@ def fastapi_server():
             if time.time() - start > timeout:
                 raise RuntimeError(f"Port {port} is open but server did not respond within timeout.")
             time.sleep(0.5)
-        yield
+        yield server_url
         return
 
     # Try to start uvicorn; fallback to python -m app.main
@@ -92,7 +103,7 @@ def fastapi_server():
             )
         time.sleep(0.5)
 
-    yield
+    yield server_url  # yield the base URL so tests can use it directly
 
     # Teardown: only stop the process we started
     if started_proc is not None:

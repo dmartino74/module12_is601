@@ -2,8 +2,8 @@ from pydantic import BaseModel, model_validator
 from typing import Literal, Optional
 from datetime import datetime
 
-# Define allowed operation types
-OperationType = Literal["Add", "Sub", "Multiply", "Divide"]
+# Allow both "Sub" and "Subtract" (tests use both)
+OperationType = Literal["Add", "Sub", "Subtract", "Multiply", "Divide"]
 
 class CalculationCreate(BaseModel):
     a: float
@@ -11,10 +11,10 @@ class CalculationCreate(BaseModel):
     type: OperationType
 
     @model_validator(mode="after")
-    def validate_inputs(cls, values):
-        if values.type == "Divide" and values.b == 0:
+    def validate_inputs(self):
+        if self.type == "Divide" and self.b == 0:
             raise ValueError("Cannot divide by zero")
-        return values
+        return self
 
 class CalculationRead(BaseModel):
     id: int
@@ -25,5 +25,3 @@ class CalculationRead(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True

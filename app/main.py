@@ -1,59 +1,30 @@
-import os
 import logging
-from fastapi import FastAPI, HTTPException, Request, Depends
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.exceptions import RequestValidationError
-from pydantic import BaseModel, Field, field_validator
-from sqlalchemy.orm import Session
-from typing import List
 
-from app.operations import get_operation
-from app.operations.models.calculation import Base, Calculation
-from app.db import engine, get_db
-from app.operations.schemas.schemas import CalculationRead
+# ✅ Import Base and engine from db
+from app.db import Base, engine
+# ✅ Import models so they are registered with Base.metadata
+from app.models import calculation, user
+# ✅ Import routers
+from app.routes import users, calculations
 
+# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Initialize FastAPI app
 app = FastAPI()
 
-# ✅ Updated template path to match your folder structure
+# Templates directory
 templates = Jinja2Templates(directory="templates")
 
-# ✅ Create tables at startup
+# ✅ Create tables at startup (ensures Calculation and User tables exist)
 Base.metadata.create_all(bind=engine)
 
-OPERATION_MAP = {
-    "add": "Add", "addition": "Add", "plus": "Add",
-    "sub": "Sub", "subtract": "Sub", "minus": "Sub",
-    "multiply": "Multiply", "times": "Multiply", "mul": "Multiply",
-    "divide": "Divide", "div": "Divide"
-}
-
-class CalculationRequest(BaseModel):
-    a: float = Field(..., description="First number")
-    b: float = Field(..., description="Second number")
-    type: str = Field(..., description="Operation type")
-
-    @field_validator('a', 'b')
-    def validate_numbers(cls, value):
-        if not isinstance(value, (int, float)):
-            raise ValueError("Operands must be numeric.")
-        return value
-
-    @field_validator('type')
-    def validate_type(cls, value):
-        if value.lower() not in OPERATION_MAP:
-            raise ValueError(f"Unsupported operation type: {value}")
-        return value
-
-class CalculationResponse(BaseModel):
-    result: float
-
-class ErrorResponse(BaseModel):
-    error: str
-
+# Exception handlers
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     logger.error(f"HTTPException on {request.url.path}: {exc.detail}")
@@ -65,35 +36,22 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     logger.error(f"ValidationError on {request.url.path}: {error_messages}")
     return JSONResponse(status_code=400, content={"error": error_messages})
 
+# Root template
 @app.get("/")
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-@app.post("/calculate", response_model=CalculationResponse, responses={400: {"model": ErrorResponse}})
-async def calculate(operation: CalculationRequest, db: Session = Depends(get_db)):
-    try:
-        normalized_type = OPERATION_MAP.get(operation.type.lower())
-        op = get_operation(normalized_type)
-        result = op.compute(operation.a, operation.b)
-
-        calc = Calculation(a=operation.a, b=operation.b, type=normalized_type, result=result)
-        db.add(calc)
-        db.commit()
-        db.refresh(calc)
-
-        return CalculationResponse(result=result)
-    except ValueError as e:
-        logger.error(f"Calculation Error: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error(f"Internal Error: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
-
-@app.get("/records", response_model=List[CalculationRead])
-async def get_all_records(db: Session = Depends(get_db)):
-    return db.query(Calculation).all()
+# ✅ Added hello_world endpoint for E2E tests
+@app.get("/hello_world")
+async def hello_world():
+    return {"message": "Hello World"}
 
 # ✅ Healthcheck endpoint for Docker
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+# ✅ Include routers
+# IMPORTANT: calculations router already has prefix="/calculate" inside its file
+app.include_router(users.router, prefix="/users", tags=["users"])
+app.include_router(calculations.router, tags=["calculations"])

@@ -1,18 +1,11 @@
-import sys
-import os
-
-# Add app/operations to Python path so 'models' can be found
-sys.path.append(os.path.join(os.path.dirname(__file__), "app", "operations"))
-
-from models.calculation import Base
 from sqlalchemy import create_engine
+from app.models import Base   # ✅ shared Base from app/models/__init__.py
+from app.db import engine     # ✅ use your existing engine setup
 
-# Match your Docker Compose credentials
-DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/fastapi_db"
+# Create all tables defined in models
+def create_all_tables():
+    Base.metadata.create_all(bind=engine)
 
-engine = create_engine(DATABASE_URL)
-
-# Create tables
-Base.metadata.create_all(bind=engine)
-
-print("✅ Tables created successfully.")
+if __name__ == "__main__":
+    create_all_tables()
+    print("✅ Tables created successfully.")
