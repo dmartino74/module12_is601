@@ -8,6 +8,7 @@ from fastapi.exceptions import RequestValidationError
 from app.db import Base, engine
 
 # ✅ Import models so they are registered with Base.metadata
+# Importing the modules ensures SQLAlchemy sees the classes
 from app.models import calculation, user
 
 # ✅ Import routers
@@ -23,7 +24,7 @@ app = FastAPI()
 # Templates directory
 templates = Jinja2Templates(directory="templates")
 
-# ✅ Create tables at startup (ensures Calculation and User tables exist)
+# ✅ Create tables at startup (users + calculations)
 Base.metadata.create_all(bind=engine)
 
 # Exception handlers

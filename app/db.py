@@ -1,34 +1,29 @@
 import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
-# ✅ Use environment variable if set, otherwise default to local Postgres
+# ✅ Load DATABASE_URL from environment, fallback to localhost for host-based pytest
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://postgres:postgres@localhost:5432/postgres"
+    "postgresql://postgres:postgres@localhost:5432/fastapi_db"
 )
 
-# ✅ Create engine
-# echo=True → logs SQL statements (helpful for debugging)
-# future=True → enables SQLAlchemy 2.0 style usage
-engine = create_engine(DATABASE_URL, echo=True, future=True)
+# Debug print (optional, remove later)
+print("Using DATABASE_URL:", DATABASE_URL)
 
-# ✅ Session factory
+# Create the SQLAlchemy engine
+engine = create_engine(DATABASE_URL)
+
+# Session factory for database operations
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# ✅ Shared Base class for all models
+# Base class for models
 Base = declarative_base()
 
 # ✅ Dependency for FastAPI routes
 def get_db():
-    db = SessionLocal()
+    db: Session = SessionLocal()
     try:
         yield db
     finally:
         db.close()
-
-# ✅ Initialize tables (useful for dev/tests)
-def init_db():
-    # Import models so they are registered with Base
-    from app.models import calculation, user
-    Base.metadata.create_all(bind=engine)

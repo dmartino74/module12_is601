@@ -1,4 +1,3 @@
-import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 
@@ -12,25 +11,28 @@ def test_register_user():
     assert response.status_code == 200
     data = response.json()
     assert data["username"] == "testuser"
-    assert "id" in data
+    assert data["email"] == "test@example.com"
+
 
 def test_login_user_success():
-    # Register first with email
+    # Register first
     client.post(
         "/users/register",
         json={"username": "loginuser", "password": "mypassword", "email": "login@example.com"}
     )
-    # Then login
     response = client.post(
         "/users/login",
         json={"username": "loginuser", "password": "mypassword"}
     )
     assert response.status_code == 200
-    assert response.json()["message"] == "Login successful"
+    data = response.json()
+    assert "access_token" in data
+    assert data["token_type"] == "bearer"
+
 
 def test_login_user_fail():
     response = client.post(
         "/users/login",
-        json={"username": "wronguser", "password": "badpass"}
+        json={"username": "wronguser", "password": "wrongpass"}
     )
     assert response.status_code == 401
