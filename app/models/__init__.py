@@ -1,3 +1,4 @@
-from .base import Base
-from .user import User
-from .calculation import Calculation  # if you have it
+from app.models.calculation import Calculation
+from app.models.user import User
+
+__all__ = ["Calculation", "User"]

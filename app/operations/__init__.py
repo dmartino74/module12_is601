@@ -1,4 +1,5 @@
 from typing import Union
+from fastapi import HTTPException
 
 Number = Union[int, float]
 
@@ -26,7 +27,8 @@ class MultiplyOperation(Operation):
 class DivideOperation(Operation):
     def compute(self, a: Number, b: Number) -> float:
         if b == 0:
-            raise ValueError("Cannot divide by zero")
+            # ✅ Match test expectation exactly
+            raise HTTPException(status_code=400, detail="Error: Cannot divide by zero!")
         return a / b
 
 
@@ -49,4 +51,3 @@ def get_operation(op_type: str) -> Operation:
 def perform_operation(a: Number, b: Number, op_type: str) -> Number:
     operation = get_operation(op_type)
     return operation.compute(a, b)
-
