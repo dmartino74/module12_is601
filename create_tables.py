@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from app.models import Base   # ✅ shared Base from app/models/__init__.py
+from app.models.base import Base   # ✅ shared Base from app/models/__init__.py
 from app.db import engine     # ✅ use your existing engine setup
 
 # Create all tables defined in models
