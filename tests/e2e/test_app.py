@@ -1,4 +1,5 @@
 import pytest
+import uuid
 from fastapi.testclient import TestClient
 from app.main import app
 
@@ -17,19 +18,21 @@ def test_homepage_loads():
 
 
 def test_register_user():
-    """Register a new user successfully"""
+    """Register a new user successfully with unique credentials"""
+    unique_name = f"e2euser_{uuid.uuid4().hex[:6]}"
+    unique_email = f"{unique_name}@example.com"
     response = client.post(
         "/users/register",
         json={
-            "username": "e2euser_unique",  # ensure unique
+            "username": unique_name,
             "password": "SecurePass123!",
-            "email": "e2e_unique@example.com"
+            "email": unique_email
         }
     )
     assert response.status_code == 200
     data = response.json()
-    assert data["username"] == "e2euser_unique"
-    assert data["email"] == "e2e_unique@example.com"
+    assert data["username"] == unique_name
+    assert data["email"] == unique_email
 
 
 def test_login_user_success():
